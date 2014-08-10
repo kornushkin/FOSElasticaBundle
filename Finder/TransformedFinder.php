@@ -5,6 +5,7 @@ namespace FOS\ElasticaBundle\Finder;
 use Elastica\Document;
 use FOS\ElasticaBundle\Transformer\ElasticaToModelTransformerInterface;
 use FOS\ElasticaBundle\Paginator\TransformedPaginatorAdapter;
+use FOS\ElasticaBundle\Paginator\TransformedHybridPaginatorAdapter;
 use FOS\ElasticaBundle\Paginator\FantaPaginatorAdapter;
 use Pagerfanta\Pagerfanta;
 use Elastica\SearchableInterface;
@@ -84,12 +85,14 @@ class TransformedFinder implements PaginatedFinderInterface
      *
      * @param string $query
      * @param array $options
+     * @param bool $isHybridResults Is needs to retrieve hybrid results
      * @return Pagerfanta
      */
-    public function findPaginated($query, $options = array())
+    public function findPaginated($query, $options = array(), $isHybridResults = false)
     {
         $queryObject = Query::create($query);
-        $paginatorAdapter = $this->createPaginatorAdapter($queryObject, $options);
+        $paginatorAdapter = $isHybridResults ? $this->createHybridPaginatorAdapter($queryObject, $options) :
+            $this->createPaginatorAdapter($queryObject, $options);
 
         return new Pagerfanta(new FantaPaginatorAdapter($paginatorAdapter));
     }
@@ -102,5 +105,15 @@ class TransformedFinder implements PaginatedFinderInterface
         $query = Query::create($query);
 
         return new TransformedPaginatorAdapter($this->searchable, $query, $options, $this->transformer);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createHybridPaginatorAdapter($query, $options = array())
+    {
+        $query = Query::create($query);
+
+        return new TransformedHybridPaginatorAdapter($this->searchable, $query, $options, $this->transformer);
     }
 }
